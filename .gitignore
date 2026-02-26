@@ -1,0 +1,29 @@
+# WeChatMem
+
+# Backend
+data/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+.pytest_cache/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# Android
+.gradle/
+local.properties
+*.apk
+build/
+app/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Claude Code
+.claude/

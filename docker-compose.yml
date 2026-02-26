@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "9721:9721"
+    volumes:
+      - app_data:/app/data
+    environment:
+      - WECHATMEM_JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - WECHATMEM_ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
+      - WECHATMEM_DEBUG=false
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "9722:9722"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  app_data:
