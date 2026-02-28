@@ -20,6 +20,7 @@ import com.wechatmem.app.ui.conversations.ConversationAdapter
 import com.wechatmem.app.ui.detail.DetailActivity
 import com.wechatmem.app.ui.login.LoginActivity
 import com.wechatmem.app.ui.manualimport.ManualImportActivity
+import com.wechatmem.app.ui.summary.SummaryListActivity
 import kotlinx.coroutines.launch
 
 class ConversationsFragment : Fragment() {
@@ -46,6 +47,9 @@ class ConversationsFragment : Fragment() {
         binding.swipeRefresh.setOnRefreshListener { loadConversations(1) }
         binding.fabImport.setOnClickListener {
             startActivity(Intent(requireContext(), ManualImportActivity::class.java))
+        }
+        binding.btnSummaryList.setOnClickListener {
+            startActivity(Intent(requireContext(), SummaryListActivity::class.java))
         }
         binding.chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             showSummaryOnly = checkedIds.contains(R.id.chipSummary)

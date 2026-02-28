@@ -53,6 +53,7 @@ class ProfileFragment : Fragment() {
         binding.switchLocalMode.setOnCheckedChangeListener { _, _ -> updateModeUI() }
         binding.btnMigrate.setOnClickListener { confirmMigrate() }
         binding.btnTestConnection.setOnClickListener { testConnection() }
+        binding.btnTestZhipuKey.setOnClickListener { testZhipuKey() }
         binding.btnSave.setOnClickListener { saveSettings() }
         binding.btnLogout.setOnClickListener { logout() }
     }
@@ -119,6 +120,37 @@ class ProfileFragment : Fragment() {
             ApiService.invalidate()
         }
         Toast.makeText(ctx, "设置已保存", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun testZhipuKey() {
+        val key = binding.etZhipuKey.text?.toString()?.trim() ?: ""
+        if (key.isBlank()) {
+            binding.tvZhipuTestResult.visibility = View.VISIBLE
+            binding.tvZhipuTestResult.text = "请先输入 API Key"
+            binding.tvZhipuTestResult.setTextColor(
+                androidx.core.content.ContextCompat.getColor(requireContext(), R.color.error))
+            return
+        }
+        binding.btnTestZhipuKey.isEnabled = false
+        binding.tvZhipuTestResult.visibility = View.VISIBLE
+        binding.tvZhipuTestResult.text = "测试中…"
+        binding.tvZhipuTestResult.setTextColor(
+            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_secondary))
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val model = binding.actvLlmModel.text?.toString()?.trim()?.ifBlank { "glm-4-flash" } ?: "glm-4-flash"
+                com.wechatmem.app.data.remote.LlmClient(key, model).ask("你好", "")
+                binding.tvZhipuTestResult.text = "✓ 连接成功"
+                binding.tvZhipuTestResult.setTextColor(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.dot_green))
+            } catch (e: Exception) {
+                binding.tvZhipuTestResult.text = "✗ ${e.message?.take(40)}"
+                binding.tvZhipuTestResult.setTextColor(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.error))
+            } finally {
+                binding.btnTestZhipuKey.isEnabled = true
+            }
+        }
     }
 
     private fun testConnection() {
