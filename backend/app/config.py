@@ -26,7 +26,23 @@ class Settings(BaseSettings):
     default_page_size: int = 20
     max_page_size: int = 100
 
+    # CORS
+    cors_origins: str = "*"
+
+    # rate limiting (slowapi format)
+    rate_limit_auth: str = "10/minute"
+    rate_limit_api: str = "60/minute"
+
+    # upload limits
+    max_image_size_mb: int = 10
+    max_upload_total_mb: int = 50
+    max_title_length: int = 200
+
     model_config = {"env_prefix": "WECHATMEM_", "env_file": ".env"}
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

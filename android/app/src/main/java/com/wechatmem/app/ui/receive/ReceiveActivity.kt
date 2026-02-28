@@ -9,10 +9,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import com.wechatmem.app.R
+import com.wechatmem.app.data.local.AppPrefs
 import com.wechatmem.app.data.remote.ApiService
+import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivityReceiveBinding
 import com.wechatmem.app.parser.WeChatTextParser
-import com.wechatmem.app.ui.conversations.ConversationsActivity
+import com.wechatmem.app.ui.main.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,15 +101,11 @@ class ReceiveActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@ReceiveActivity)
-
-                if (imageUris.isEmpty()) {
-                    // Simple JSON upload (no images)
-                    api.createConversation(
-                        com.wechatmem.app.data.model.ConversationCreate(text = sharedText)
-                    )
+                if (AppPrefs.isLocalMode(this@ReceiveActivity) || imageUris.isEmpty()) {
+                    val repo = StorageManager.getRepository(this@ReceiveActivity)
+                    repo.createConversation(text = sharedText, title = null)
                 } else {
-                    // Multipart upload with images
+                    val api = ApiService.getInstance(this@ReceiveActivity)
                     val textPart = sharedText.toRequestBody("text/plain".toMediaType())
                     val imageParts = withContext(Dispatchers.IO) {
                         imageUris.mapIndexed { index, uri ->
@@ -131,7 +129,7 @@ class ReceiveActivity : AppCompatActivity() {
 
                 val navIntent = Intent(
                     this@ReceiveActivity,
-                    ConversationsActivity::class.java
+                    MainActivity::class.java
                 ).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
                             Intent.FLAG_ACTIVITY_NEW_TASK

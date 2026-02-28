@@ -8,11 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.wechatmem.app.R
-import com.wechatmem.app.data.model.ConversationCreate
-import com.wechatmem.app.data.remote.ApiService
+import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivityManualImportBinding
 import com.wechatmem.app.parser.WeChatTextParser
-import com.wechatmem.app.ui.conversations.ConversationsActivity
+import com.wechatmem.app.ui.main.MainActivity
 import kotlinx.coroutines.launch
 
 class ManualImportActivity : AppCompatActivity() {
@@ -78,10 +77,8 @@ class ManualImportActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@ManualImportActivity)
-                api.createConversation(
-                    ConversationCreate(text = text, title = title)
-                )
+                val repo = StorageManager.getRepository(this@ManualImportActivity)
+                repo.createConversation(text = text, title = title)
 
                 Toast.makeText(
                     this@ManualImportActivity,
@@ -91,7 +88,7 @@ class ManualImportActivity : AppCompatActivity() {
 
                 val intent = Intent(
                     this@ManualImportActivity,
-                    ConversationsActivity::class.java
+                    MainActivity::class.java
                 ).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or
                             Intent.FLAG_ACTIVITY_NEW_TASK

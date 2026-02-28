@@ -6,6 +6,7 @@ import type {
   SearchResponse,
   AskResponse,
 } from '@/types'
+import { useToastStore } from '@/stores/toast'
 
 const http = axios.create({
   baseURL: '/api/v1',
@@ -22,16 +23,23 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-// Redirect to /login on 401/403
+// Redirect to /login on 401/403, toast on 429/5xx
 http.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 || err.response?.status === 403) {
+    const status = err.response?.status
+    if (status === 401 || status === 403) {
       const path = window.location.pathname
       if (path !== '/login') {
         localStorage.removeItem('wechatmem_token')
         window.location.href = '/login'
       }
+    } else if (status === 429) {
+      const toast = useToastStore()
+      toast.error('请求过于频繁，请稍后再试')
+    } else if (status >= 500) {
+      const toast = useToastStore()
+      toast.error('服务器错误，请稍后再试')
     }
     return Promise.reject(err)
   },

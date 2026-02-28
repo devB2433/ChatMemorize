@@ -12,6 +12,7 @@ import com.wechatmem.app.R
 import com.wechatmem.app.data.local.AppPrefs
 import com.wechatmem.app.data.model.ConversationBrief
 import com.wechatmem.app.data.remote.ApiService
+import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivityConversationsBinding
 import com.wechatmem.app.ui.detail.DetailActivity
 import com.wechatmem.app.ui.manualimport.ManualImportActivity
@@ -41,8 +42,7 @@ class ConversationsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Check if server is configured
-        if (!AppPrefs.isConfigured(this)) {
+        if (!StorageManager.isLocal(this) && !AppPrefs.isConfigured(this)) {
             binding.tvEmpty.visibility = View.VISIBLE
             binding.tvEmpty.text = getString(R.string.label_not_configured)
             binding.recyclerView.visibility = View.GONE
@@ -105,8 +105,8 @@ class ConversationsActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@ConversationsActivity)
-                val result = api.getConversations(page = page, pageSize = pageSize)
+                val repo = StorageManager.getRepository(this@ConversationsActivity)
+                val result = repo.getConversations(page = page, pageSize = pageSize)
 
                 if (page == 1) {
                     adapter.submitList(result.items)

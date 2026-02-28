@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConversationsStore } from '@/stores/conversations'
 import SearchBar from '@/components/SearchBar.vue'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 const store = useConversationsStore()
 const router = useRouter()
@@ -45,7 +46,7 @@ watch(
     <h2 class="page-title">会话列表</h2>
     <SearchBar v-model="keyword" placeholder="搜索会话..." @search="onSearch" />
 
-    <div v-if="store.loading" class="loading">加载中...</div>
+    <SkeletonLoader v-if="store.loading" type="list" />
 
     <div v-else-if="store.items.length === 0" class="empty">暂无会话记录</div>
 

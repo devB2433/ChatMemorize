@@ -11,10 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.tabs.TabLayout
 import com.wechatmem.app.R
-import com.wechatmem.app.data.model.AskRequest
-import com.wechatmem.app.data.model.SearchRequest
 import com.wechatmem.app.data.model.SearchResult
-import com.wechatmem.app.data.remote.ApiService
+import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivitySearchBinding
 import com.wechatmem.app.ui.detail.DetailActivity
 import kotlinx.coroutines.launch
@@ -90,14 +88,14 @@ class SearchActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@SearchActivity)
+                val repo = StorageManager.getRepository(this@SearchActivity)
                 if (isAskMode) {
-                    val response = api.ask(AskRequest(question = query))
+                    val response = repo.ask(query)
                     binding.cardAiAnswer.visibility = View.VISIBLE
                     binding.tvAiAnswer.text = response.answer
                     adapter.submitList(response.sources)
                 } else {
-                    val response = api.search(SearchRequest(query = query))
+                    val response = repo.search(query)
                     adapter.submitList(response.results)
                 }
             } catch (e: Exception) {

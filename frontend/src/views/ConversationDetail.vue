@@ -2,12 +2,16 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useConversationsStore } from '@/stores/conversations'
+import { useToastStore } from '@/stores/toast'
 import ChatBubble from '@/components/ChatBubble.vue'
 import SummaryCard from '@/components/SummaryCard.vue'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import { exportAsMarkdown } from '@/utils/export'
 
 const route = useRoute()
 const router = useRouter()
 const store = useConversationsStore()
+const toast = useToastStore()
 
 const editingTitle = ref(false)
 const titleDraft = ref('')
@@ -30,8 +34,13 @@ function startEditTitle() {
 
 async function saveTitle() {
   if (!titleDraft.value.trim()) return
-  await store.updateTitle(convId.value, titleDraft.value.trim())
-  editingTitle.value = false
+  try {
+    await store.updateTitle(convId.value, titleDraft.value.trim())
+    editingTitle.value = false
+    toast.success('标题已更新')
+  } catch {
+    toast.error('更新标题失败')
+  }
 }
 
 function cancelEdit() {
@@ -42,6 +51,9 @@ async function regenerateSummary() {
   summaryLoading.value = true
   try {
     await store.regenerateSummary(convId.value)
+    toast.success('摘要已生成')
+  } catch {
+    toast.error('生成摘要失败')
   } finally {
     summaryLoading.value = false
   }
@@ -49,8 +61,20 @@ async function regenerateSummary() {
 
 async function deleteConv() {
   if (!confirm('确定要删除此会话吗？')) return
-  await store.deleteConversation(convId.value)
-  router.push('/')
+  try {
+    await store.deleteConversation(convId.value)
+    toast.success('会话已删除')
+    router.push('/')
+  } catch {
+    toast.error('删除失败')
+  }
+}
+
+function handleExport() {
+  if (store.currentDetail) {
+    exportAsMarkdown(store.currentDetail)
+    toast.success('已导出 Markdown')
+  }
 }
 </script>
 
@@ -59,6 +83,7 @@ async function deleteConv() {
     <div class="detail-toolbar">
       <button class="btn-back" @click="router.push('/')">返回列表</button>
       <div class="toolbar-actions">
+        <button class="btn-export" @click="handleExport">导出 Markdown</button>
         <button class="btn-summary" :disabled="summaryLoading" @click="regenerateSummary">
           {{ summaryLoading ? '生成中...' : '生成摘要' }}
         </button>
@@ -66,7 +91,7 @@ async function deleteConv() {
       </div>
     </div>
 
-    <div v-if="store.loading" class="loading">加载中...</div>
+    <SkeletonLoader v-if="store.loading" type="detail" />
 
     <template v-else-if="store.currentDetail">
       <div class="title-section">
@@ -114,12 +139,12 @@ async function deleteConv() {
 }
 .toolbar-actions { display: flex; gap: 8px; }
 .btn-back { background: #f0f0f0; color: #333; }
+.btn-export { background: #1890ff; color: #fff; }
 .btn-summary { background: #07c160; color: #fff; }
 .btn-delete { background: #ff4d4f; color: #fff; }
 .btn-edit-title { background: #f0f0f0; color: #333; font-size: 12px; padding: 4px 10px; }
 .btn-save { background: #07c160; color: #fff; font-size: 12px; padding: 4px 10px; }
 .btn-cancel { background: #f0f0f0; color: #333; font-size: 12px; padding: 4px 10px; }
-.loading { text-align: center; padding: 40px 0; color: #999; }
 .title-section {
   display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
 }

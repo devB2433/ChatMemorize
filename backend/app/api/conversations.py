@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import sqlalchemy as sa
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,7 @@ from app.schemas.conversation import (
 from app.schemas.message import MessageOut
 from app.services.parser import parse_wechat_text
 from app.config import settings
+from app.limiter import limiter
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -60,7 +61,9 @@ async def _save_images(conv_id: str, files: list[UploadFile]) -> list[str]:
 
 # --- Upload: JSON body (text only, backward compatible) ---
 @router.post("", response_model=ConversationBrief, status_code=201)
+@limiter.limit(settings.rate_limit_api)
 async def create_conversation(
+    request: Request,
     body: ConversationCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
@@ -71,7 +74,9 @@ async def create_conversation(
 
 # --- Upload: Multipart (text + images from Android) ---
 @router.post("/upload", response_model=ConversationBrief, status_code=201)
+@limiter.limit(settings.rate_limit_api)
 async def upload_conversation(
+    request: Request,
     background_tasks: BackgroundTasks,
     text: str = Form(...),
     title: str | None = Form(None),
@@ -79,7 +84,24 @@ async def upload_conversation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if images:
+        await _validate_upload_size(images)
     return await _create_conv(text, title, images, background_tasks, db, current_user)
+
+
+async def _validate_upload_size(images: list[UploadFile]) -> None:
+    """Check individual image size and total upload size."""
+    max_img = settings.max_image_size_mb * 1024 * 1024
+    max_total = settings.max_upload_total_mb * 1024 * 1024
+    total = 0
+    for f in images:
+        data = await f.read()
+        total += len(data)
+        if len(data) > max_img:
+            raise HTTPException(413, f"单张图片不能超过 {settings.max_image_size_mb}MB")
+        await f.seek(0)  # reset for later read
+    if total > max_total:
+        raise HTTPException(413, f"上传总大小不能超过 {settings.max_upload_total_mb}MB")
 
 
 async def _create_conv(
@@ -212,7 +234,9 @@ def _msg_to_out(m: Message) -> MessageOut:
 
 
 @router.get("", response_model=PaginatedConversations)
+@limiter.limit(settings.rate_limit_api)
 async def list_conversations(
+    request: Request,
     page: int = 1,
     page_size: int = 20,
     q: str | None = None,
@@ -248,7 +272,9 @@ async def list_conversations(
 
 
 @router.get("/{conv_id}", response_model=ConversationDetail)
+@limiter.limit(settings.rate_limit_api)
 async def get_conversation(
+    request: Request,
     conv_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -278,7 +304,9 @@ async def get_conversation(
 
 
 @router.patch("/{conv_id}", response_model=ConversationBrief)
+@limiter.limit(settings.rate_limit_api)
 async def update_conversation(
+    request: Request,
     conv_id: str,
     body: ConversationUpdate,
     db: AsyncSession = Depends(get_db),
@@ -302,7 +330,9 @@ async def update_conversation(
 
 
 @router.delete("/{conv_id}", status_code=204)
+@limiter.limit(settings.rate_limit_api)
 async def delete_conversation(
+    request: Request,
     conv_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -321,11 +351,12 @@ async def delete_conversation(
     await db.execute(sa.delete(Conversation).where(Conversation.id == conv_id))
     await db.commit()
 
+    log = logging.getLogger(__name__)
     try:
         from app.services.vectorstore import delete_conversation_vectors
         delete_conversation_vectors(conv_id)
     except Exception:
-        pass
+        log.warning("Failed to delete vectors for %s", conv_id, exc_info=True)
 
     # Clean up summary Markdown file
     from app.services.summary import delete_summary_md
@@ -338,7 +369,9 @@ async def delete_conversation(
 
 
 @router.post("/{conv_id}/summary", response_model=ConversationBrief)
+@limiter.limit(settings.rate_limit_api)
 async def regenerate_summary(
+    request: Request,
     conv_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

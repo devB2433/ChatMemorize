@@ -11,7 +11,7 @@ import com.wechatmem.app.data.local.AppPrefs
 import com.wechatmem.app.data.model.AuthRequest
 import com.wechatmem.app.data.remote.ApiService
 import com.wechatmem.app.databinding.ActivityLoginBinding
-import com.wechatmem.app.ui.conversations.ConversationsActivity
+import com.wechatmem.app.ui.main.MainActivity
 import com.wechatmem.app.ui.settings.SettingsActivity
 import kotlinx.coroutines.launch
 
@@ -23,8 +23,8 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Skip login if already authenticated
-        if (AppPrefs.isLoggedIn(this)) {
+        // Skip login if local mode or already authenticated
+        if (AppPrefs.isLocalMode(this) || AppPrefs.isLoggedIn(this)) {
             goToMain()
             return
         }
@@ -91,7 +91,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        startActivity(Intent(this, ConversationsActivity::class.java))
+        startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 }

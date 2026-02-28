@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Speech bubble body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,22 Q22,16 28,16 L80,16 Q86,16 86,22 L86,62 Q86,68 80,68 L46,68 L32,82 L32,68 L28,68 Q22,68 22,62 Z" />
+
+    <!-- Three memory dots -->
+    <path
+        android:fillColor="#1D63ED"
+        android:pathData="M36,42 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#1D63ED"
+        android:pathData="M49,42 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#1D63ED"
+        android:pathData="M62,42 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+
+</vector>

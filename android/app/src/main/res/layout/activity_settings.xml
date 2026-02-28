@@ -25,6 +25,93 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Storage Mode -->
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchLocalMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="本地存储模式" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="开启后数据存储在手机本地，解析/搜索/向量化均在本地完成"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Zhipu API Key (for local mode LLM) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilZhipuKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="智谱 API Key"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusBottomEnd="8dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etZhipuKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:text="本地模式下摘要/问答需要智谱 GLM API Key"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Download Model -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDownloadModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="下载 Embedding 模型"
+                style="@style/Widget.Material3.Button.TonalButton"
+                app:cornerRadius="8dp" />
+
+            <TextView
+                android:id="@+id/tvModelStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Migrate to Cloud -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMigrate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="迁移本地数据到云端"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                app:cornerRadius="8dp" />
+
+            <TextView
+                android:id="@+id/tvMigrateStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="24dp"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="16dp"
+                android:background="@color/text_secondary" />
+
             <!-- Server URL -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"

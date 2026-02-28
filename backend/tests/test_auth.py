@@ -1,42 +1,6 @@
-"""Test JWT auth flow: register, login, CRUD with token, 401 without token."""
+"""Test JWT auth flow: register, login, refresh, me, 401 without token."""
 import pytest
-import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-
-from app.database import Base, get_db
-from app.main import app
-
-# Use in-memory SQLite for tests
-_test_engine = create_async_engine("sqlite+aiosqlite://", echo=False)
-_test_session = async_sessionmaker(_test_engine, class_=AsyncSession, expire_on_commit=False)
-
-
-async def _override_get_db():
-    async with _test_session() as session:
-        yield session
-
-
-app.dependency_overrides[get_db] = _override_get_db
-
-
-@pytest_asyncio.fixture(autouse=True)
-async def setup_db():
-    from app.models.user import User  # noqa: F401
-    from app.models.conversation import Conversation  # noqa: F401
-    from app.models.message import Message  # noqa: F401
-    async with _test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    app.dependency_overrides[get_db] = _override_get_db
-
-
-@pytest_asyncio.fixture
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
@@ -82,34 +46,18 @@ async def test_me(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_conversations_require_auth(client: AsyncClient):
     resp = await client.get("/api/v1/conversations")
-    assert resp.status_code in (401, 403)  # HTTPBearer returns 403 or 401 depending on version
+    assert resp.status_code in (401, 403)
 
 
 @pytest.mark.asyncio
-async def test_create_and_list_conversations(client: AsyncClient):
-    # Register and get token
+async def test_refresh_token(client: AsyncClient):
     reg = await client.post("/api/v1/auth/register", json={"username": "frank", "password": "123456"})
     token = reg.json()["token"]
     headers = {"Authorization": f"Bearer {token}"}
-
-    # Create conversation
-    text = "2024-01-01 10:00:00\n张三\n你好\n\n2024-01-01 10:01:00\n李四\n你好呀"
-    resp = await client.post("/api/v1/conversations", json={"text": text}, headers=headers)
-    assert resp.status_code == 201
-    conv_id = resp.json()["id"]
-
-    # List - should see the conversation
-    resp = await client.get("/api/v1/conversations", headers=headers)
+    resp = await client.post("/api/v1/auth/refresh", headers=headers)
     assert resp.status_code == 200
-    assert resp.json()["total"] == 1
-
-    # Another user should not see it
-    reg2 = await client.post("/api/v1/auth/register", json={"username": "grace", "password": "123456"})
-    token2 = reg2.json()["token"]
-    resp = await client.get("/api/v1/conversations", headers={"Authorization": f"Bearer {token2}"})
-    assert resp.status_code == 200
-    assert resp.json()["total"] == 0
-
-    # Other user cannot access the conversation detail
-    resp = await client.get(f"/api/v1/conversations/{conv_id}", headers={"Authorization": f"Bearer {token2}"})
-    assert resp.status_code == 404
+    new_token = resp.json()["token"]
+    assert "token" in resp.json()
+    # New token should work
+    resp2 = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {new_token}"})
+    assert resp2.status_code == 200

@@ -1,14 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.schemas.message import MessageOut
 
 
 class ConversationCreate(BaseModel):
     text: str  # raw WeChat shared text
-    title: str | None = None
+    title: str | None = Field(None, max_length=200)
 
 
 class ConversationUpdate(BaseModel):
-    title: str | None = None
+    title: str | None = Field(None, max_length=200)
 
 
 class ConversationBrief(BaseModel):

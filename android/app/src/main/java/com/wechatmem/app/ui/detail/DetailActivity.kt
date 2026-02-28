@@ -9,7 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.wechatmem.app.R
-import com.wechatmem.app.data.remote.ApiService
+import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivityDetailBinding
 import kotlinx.coroutines.launch
 
@@ -45,8 +45,8 @@ class DetailActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@DetailActivity)
-                val detail = api.getConversation(conversationId)
+                val repo = StorageManager.getRepository(this@DetailActivity)
+                val detail = repo.getConversation(conversationId)
 
                 // Set first participant for bubble alignment
                 if (detail.participants.isNotEmpty()) {
@@ -86,8 +86,8 @@ class DetailActivity : AppCompatActivity() {
     private fun deleteConversation() {
         lifecycleScope.launch {
             try {
-                val api = ApiService.getInstance(this@DetailActivity)
-                api.deleteConversation(conversationId)
+                val repo = StorageManager.getRepository(this@DetailActivity)
+                repo.deleteConversation(conversationId)
                 Toast.makeText(this@DetailActivity, "已删除", Toast.LENGTH_SHORT).show()
                 finish()
             } catch (e: Exception) {

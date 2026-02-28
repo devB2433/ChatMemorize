@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 import sqlalchemy as sa
 
@@ -14,6 +14,8 @@ from app.database import get_db
 from app.models.conversation import Conversation
 from app.models.user import User
 from app.services.auth import get_current_user
+from app.limiter import limiter
+from app.config import settings
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -42,7 +44,9 @@ def _get_vector_search():
 
 
 @router.post("", response_model=SearchResponse)
+@limiter.limit(settings.rate_limit_api)
 async def semantic_search(
+    request: Request,
     body: SearchRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -65,7 +69,9 @@ async def semantic_search(
 
 
 @router.post("/ask", response_model=AskResponse)
+@limiter.limit(settings.rate_limit_api)
 async def ask_question(
+    request: Request,
     body: AskRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
