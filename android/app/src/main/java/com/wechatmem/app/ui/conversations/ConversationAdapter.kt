@@ -1,10 +1,13 @@
 package com.wechatmem.app.ui.conversations
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.wechatmem.app.R
 import com.wechatmem.app.data.model.ConversationBrief
 import com.wechatmem.app.databinding.ItemConversationBinding
 
@@ -29,10 +32,30 @@ class ConversationAdapter(
 
         fun bind(item: ConversationBrief) {
             binding.tvTitle.text = item.title ?: item.participants.joinToString(", ")
-            binding.tvParticipants.text = item.participants.joinToString(", ")
+            binding.tvParticipants.text = item.participants.joinToString(" · ")
             binding.tvMessageCount.text = "${item.messageCount} 条消息"
-            binding.tvDate.text = item.createdAt.take(10)
+            binding.tvDate.text = formatTime(item.updatedAt)
+
+            // Summary preview
+            if (!item.summary.isNullOrBlank()) {
+                binding.tvSummaryPreview.visibility = View.VISIBLE
+                binding.tvSummaryPreview.text = item.summary
+                binding.viewStatusDot.backgroundTintList =
+                    ContextCompat.getColorStateList(binding.root.context, R.color.dot_green)
+            } else {
+                binding.tvSummaryPreview.visibility = View.GONE
+                binding.viewStatusDot.backgroundTintList =
+                    ContextCompat.getColorStateList(binding.root.context, R.color.primary)
+            }
+
             binding.root.setOnClickListener { onClick(item) }
+        }
+
+        private fun formatTime(iso: String): String {
+            // "2024-01-15T10:30:00" → "2024-01-15 10:30"
+            return try {
+                iso.replace("T", " ").take(16)
+            } catch (_: Exception) { iso.take(10) }
         }
     }
 
@@ -40,7 +63,6 @@ class ConversationAdapter(
         private val DIFF = object : DiffUtil.ItemCallback<ConversationBrief>() {
             override fun areItemsTheSame(a: ConversationBrief, b: ConversationBrief) =
                 a.id == b.id
-
             override fun areContentsTheSame(a: ConversationBrief, b: ConversationBrief) =
                 a == b
         }

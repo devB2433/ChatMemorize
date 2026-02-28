@@ -25,6 +25,17 @@
             android:contentDescription="@string/btn_delete"
             app:tint="@color/on_primary" />
 
+        <ImageButton
+            android:id="@+id/btnGenerateSummary"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_edit"
+            android:contentDescription="@string/btn_generate_summary"
+            app:tint="@color/on_primary" />
+
     </com.google.android.material.appbar.MaterialToolbar>
 
     <com.google.android.material.card.MaterialCardView

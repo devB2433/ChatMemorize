@@ -38,12 +38,18 @@ class ConversationsFragment : Fragment() {
         return binding.root
     }
 
+    private var showSummaryOnly = false
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         binding.swipeRefresh.setOnRefreshListener { loadConversations(1) }
         binding.fabImport.setOnClickListener {
             startActivity(Intent(requireContext(), ManualImportActivity::class.java))
+        }
+        binding.chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            showSummaryOnly = checkedIds.contains(R.id.chipSummary)
+            loadConversations(1)
         }
     }
 
@@ -81,8 +87,10 @@ class ConversationsFragment : Fragment() {
             try {
                 val result = StorageManager.getRepository(requireContext())
                     .getConversations(page, pageSize)
-                if (page == 1) adapter.submitList(result.items)
-                else adapter.submitList(adapter.currentList + result.items)
+                var items = result.items
+                if (showSummaryOnly) items = items.filter { !it.summary.isNullOrBlank() }
+                if (page == 1) adapter.submitList(items)
+                else adapter.submitList(adapter.currentList + items)
                 currentPage = result.page
                 totalItems = result.total
                 binding.tvPageInfo.text = getString(R.string.label_page_info, currentPage, totalItems)

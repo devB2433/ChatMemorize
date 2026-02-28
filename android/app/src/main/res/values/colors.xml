@@ -13,4 +13,5 @@
     <color name="divider">#E8ECF1</color>
     <color name="error">#E5484D</color>
     <color name="search_highlight">#FFEAA7</color>
+    <color name="dot_green">#22C55E</color>
 </resources>

@@ -55,6 +55,7 @@
     <string name="label_go_login">已有账号？去登录</string>
     <string name="label_logout">退出登录</string>
     <string name="label_server_config">配置服务器地址</string>
+    <string name="btn_generate_summary">生成摘要</string>
     <string name="tab_conversations">对话</string>
     <string name="tab_search_nav">搜索</string>
     <string name="tab_profile">我的</string>

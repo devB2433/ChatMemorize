@@ -36,6 +36,7 @@ class DetailActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
 
         binding.btnDelete.setOnClickListener { confirmDelete() }
+        binding.btnGenerateSummary.setOnClickListener { generateSummary() }
 
         loadDetail()
     }
@@ -96,6 +97,23 @@ class DetailActivity : AppCompatActivity() {
                     "删除失败: ${e.message}",
                     Toast.LENGTH_SHORT
                 ).show()
+            }
+        }
+    }
+
+    private fun generateSummary() {
+        binding.btnGenerateSummary.isEnabled = false
+        binding.cardSummary.visibility = View.VISIBLE
+        binding.tvSummary.text = "生成中…"
+        lifecycleScope.launch {
+            try {
+                val repo = StorageManager.getRepository(this@DetailActivity)
+                val summary = repo.generateSummary(conversationId)
+                binding.tvSummary.text = summary
+            } catch (e: Exception) {
+                binding.tvSummary.text = "生成失败: ${e.message}"
+            } finally {
+                binding.btnGenerateSummary.isEnabled = true
             }
         }
     }
