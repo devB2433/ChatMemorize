@@ -113,10 +113,20 @@ class LocalRepository(private val context: Context) : ConversationRepository {
 
     override suspend fun search(query: String, topK: Int): SearchResponse {
         val model = getOrCreateEmbedding()
-        val queryVec = model.encode(query)
 
-        // 使用时间范围阶梯搜索
-        val (results, metadata) = vectorSearch.searchWithTimeRange(queryVec, topK * 2, minResults = 5)
+        // 解析时间表达式
+        val parseResult = com.wechatmem.app.data.local.search.TimeParser.parse(query)
+        val actualQuery = if (parseResult.cleanQuery.isNotBlank()) parseResult.cleanQuery else query
+        val queryVec = model.encode(actualQuery)
+
+        // 根据是否有时间限制选择搜索策略
+        val (results, metadata) = if (parseResult.startDate != null) {
+            // 有时间限制，直接搜索指定范围
+            vectorSearch.searchSince(queryVec, parseResult.startDate, topK * 2)
+        } else {
+            // 无时间限制，使用阶梯搜索
+            vectorSearch.searchWithTimeRange(queryVec, topK * 2, minResults = 5)
+        }
 
         // 同时搜索摘要
         val summaryResults = searchInSummaries(queryVec, topK)
@@ -146,7 +156,8 @@ class LocalRepository(private val context: Context) : ConversationRepository {
             }
         }
 
-        android.util.Log.d("LocalRepository", "Search: ${metadata.timeRange}, found ${searchResults.size} results")
+        val timeInfo = parseResult.timeLabel ?: metadata.timeRange
+        android.util.Log.d("LocalRepository", "Search: $timeInfo, found ${searchResults.size} results")
         return SearchResponse(searchResults, query)
     }
 

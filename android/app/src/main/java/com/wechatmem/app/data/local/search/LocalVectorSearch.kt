@@ -38,6 +38,39 @@ class LocalVectorSearch(private val vectorDao: VectorDao) {
     }
 
     /**
+     * 按指定时间范围搜索
+     * @param startDate 起始日期，格式 yyyy-MM-dd'T'HH:mm:ss
+     */
+    suspend fun searchSince(
+        queryEmbedding: FloatArray,
+        startDate: String,
+        topK: Int = 10
+    ): Pair<List<Result>, SearchMetadata> {
+        val vectors = vectorDao.getVectorsSince(startDate)
+
+        if (vectors.isEmpty()) {
+            return emptyList<Result>() to SearchMetadata("无结果", 0, 0)
+        }
+
+        val results = vectors.map { v ->
+            Result(
+                v.messageId,
+                v.conversationId,
+                cosine(queryEmbedding, bytesToFloats(v.embedding))
+            )
+        }.sortedByDescending { it.score }.take(topK)
+
+        val metadata = SearchMetadata(
+            timeRange = "指定时间范围",
+            vectorCount = vectors.size,
+            resultCount = results.size
+        )
+
+        Log.d("LocalVectorSearch", "Found ${results.size} results since $startDate (searched ${vectors.size} vectors)")
+        return results to metadata
+    }
+
+    /**
      * 时间范围阶梯搜索
      * 先搜索最近的对话，如果结果不够，逐步扩大范围
      */
