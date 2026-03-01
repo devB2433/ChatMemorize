@@ -60,6 +60,9 @@
         <activity android:name=".ui.settings.SettingsActivity" />
         <activity android:name=".ui.manualimport.ManualImportActivity" />
         <activity android:name=".ui.summary.SummaryListActivity" />
+        <activity android:name=".ui.article.ArticleReceiveActivity" android:exported="false" />
+        <activity android:name=".ui.article.ArticleListActivity" android:exported="false" />
+        <activity android:name=".ui.article.ArticleDetailActivity" android:exported="false" />
 
     </application>
 </manifest>

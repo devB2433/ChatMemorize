@@ -20,7 +20,6 @@ import com.wechatmem.app.ui.conversations.ConversationAdapter
 import com.wechatmem.app.ui.detail.DetailActivity
 import com.wechatmem.app.ui.login.LoginActivity
 import com.wechatmem.app.ui.manualimport.ManualImportActivity
-import com.wechatmem.app.ui.summary.SummaryListActivity
 import kotlinx.coroutines.launch
 
 class ConversationsFragment : Fragment() {
@@ -48,9 +47,6 @@ class ConversationsFragment : Fragment() {
         binding.fabImport.setOnClickListener {
             startActivity(Intent(requireContext(), ManualImportActivity::class.java))
         }
-        binding.btnSummaryList.setOnClickListener {
-            startActivity(Intent(requireContext(), SummaryListActivity::class.java))
-        }
         binding.chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
             showSummaryOnly = checkedIds.contains(R.id.chipSummary)
             loadConversations(1)
@@ -61,7 +57,7 @@ class ConversationsFragment : Fragment() {
         super.onResume()
         val ctx = requireContext()
         if (!StorageManager.isLocal(ctx) && !AppPrefs.isConfigured(ctx)) {
-            binding.tvEmpty.visibility = View.VISIBLE
+            binding.layoutEmpty.visibility = View.VISIBLE
             binding.tvEmpty.text = getString(R.string.label_not_configured)
             binding.recyclerView.visibility = View.GONE
             return
@@ -89,18 +85,18 @@ class ConversationsFragment : Fragment() {
         isLoading = true
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val result = StorageManager.getRepository(requireContext())
-                    .getConversations(page, pageSize)
-                var items = result.items
-                if (showSummaryOnly) items = items.filter { !it.summary.isNullOrBlank() }
-                if (page == 1) adapter.submitList(items)
-                else adapter.submitList(adapter.currentList + items)
+                val repo = StorageManager.getRepository(requireContext())
+                val result = repo.getConversations(page, pageSize)
+                var list = result.items
+                if (showSummaryOnly) list = list.filter { !it.summary.isNullOrBlank() }
+                if (page == 1) adapter.submitList(list) else adapter.submitList(adapter.currentList + list)
                 currentPage = result.page
                 totalItems = result.total
+
                 binding.tvPageInfo.text = getString(R.string.label_page_info, currentPage, totalItems)
                 val hasData = adapter.currentList.isNotEmpty()
                 binding.recyclerView.visibility = if (hasData) View.VISIBLE else View.GONE
-                binding.tvEmpty.visibility = if (hasData) View.GONE else View.VISIBLE
+                binding.layoutEmpty.visibility = if (hasData) View.GONE else View.VISIBLE
                 if (!hasData) binding.tvEmpty.text = getString(R.string.label_no_data)
             } catch (e: Exception) {
                 if (e is retrofit2.HttpException && e.code() in listOf(401, 403)) {

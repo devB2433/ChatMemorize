@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">微信记忆</string>
+    <string name="app_name">拾遗</string>
     <string name="title_conversations">对话列表</string>
     <string name="title_receive">接收对话</string>
     <string name="title_detail">对话详情</string>
@@ -59,4 +59,27 @@
     <string name="tab_conversations">对话</string>
     <string name="tab_search_nav">搜索</string>
     <string name="tab_profile">我的</string>
+    <!-- Article feature -->
+    <string name="title_article_receive">保存文章</string>
+    <string name="title_article_list">文章列表</string>
+    <string name="title_article_detail">文章详情</string>
+    <string name="label_article_url">文章链接</string>
+    <string name="label_article_content">正文</string>
+    <string name="article_loading">正在加载文章内容…</string>
+    <string name="article_extracted">已提取：%s</string>
+    <string name="article_extract_failed">内容提取失败，仍可保存链接</string>
+    <string name="article_saving">保存中…</string>
+    <string name="article_saved">文章已保存</string>
+    <string name="article_list_empty">暂无保存的文章</string>
+    <string name="article_no_title">无标题</string>
+    <string name="article_no_content">未提取到正文</string>
+    <string name="btn_save_article">保存文章</string>
+    <string name="generating">生成中…</string>
+    <string name="error_no_api_key">请先在「我的」页面配置智谱 API Key</string>
+    <string name="error_generate_failed">生成失败</string>
+    <!-- Tag feature -->
+    <string name="title_select_tag">选择标签</string>
+    <string name="btn_new_tag">新建标签</string>
+    <string name="btn_add_tag">添加标签</string>
+    <string name="hint_tag_name">标签名称</string>
 </resources>

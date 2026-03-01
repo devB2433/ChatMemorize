@@ -13,11 +13,13 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.wechatmem.app.R
 import com.wechatmem.app.data.local.AppPrefs
-import com.wechatmem.app.data.local.embedding.ModelDownloader
 import com.wechatmem.app.data.migration.MigrationService
 import com.wechatmem.app.data.remote.ApiService
 import com.wechatmem.app.databinding.FragmentProfileBinding
+import com.wechatmem.app.data.local.llm.LlmModelManager
+import com.wechatmem.app.ui.article.ArticleListActivity
 import com.wechatmem.app.ui.login.LoginActivity
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
@@ -26,6 +28,8 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val llmModels = arrayOf("glm-4-flash", "glm-4-air", "glm-4", "glm-4-plus")
+    private var selectedLocalModelId: String? = null
+    private var downloadJob: Job? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentProfileBinding.inflate(inflater, container, false)
@@ -48,14 +52,57 @@ class ProfileFragment : Fragment() {
         binding.actvLlmModel.setText(AppPrefs.getLlmModel(ctx), false)
 
         updateModeUI()
-        updateModelStatus()
+
+        // LLM backend RadioGroup
+        val backend = AppPrefs.getLlmBackend(ctx)
+        if (backend == "local") binding.rgLlmBackend.check(R.id.rbLocal)
+        else binding.rgLlmBackend.check(R.id.rbCloud)
+        updateLlmBackendUI(backend == "local")
+
+        // Local model dropdown
+        val localModelNames = LlmModelManager.AVAILABLE_MODELS.map { it.displayName }
+        val localModelAdapter = ArrayAdapter(ctx, android.R.layout.simple_dropdown_item_1line, localModelNames)
+        binding.actvLocalModel.setAdapter(localModelAdapter)
+        val savedLocalModel = AppPrefs.getLocalLlmModel(ctx)
+        selectedLocalModelId = if (savedLocalModel.isNotBlank()) savedLocalModel else LlmModelManager.AVAILABLE_MODELS[0].id
+        val savedModelInfo = LlmModelManager.getInfo(selectedLocalModelId ?: "")
+        binding.actvLocalModel.setText(savedModelInfo?.displayName ?: "", false)
+        updateLocalModelStatus()
+
+        binding.rgLlmBackend.setOnCheckedChangeListener { _, checkedId ->
+            updateLlmBackendUI(checkedId == R.id.rbLocal)
+        }
+        binding.actvLocalModel.setOnItemClickListener { _, _, position, _ ->
+            selectedLocalModelId = LlmModelManager.AVAILABLE_MODELS[position].id
+            updateLocalModelStatus()
+        }
+        binding.btnDownloadModel.setOnClickListener { startDownload() }
+        binding.btnPauseResumeModel.setOnClickListener { togglePauseResume() }
+        binding.btnDeleteModel.setOnClickListener {
+            val modelId = selectedLocalModelId ?: return@setOnClickListener
+            LlmModelManager.deleteModel(ctx, modelId)
+            updateLocalModelStatus()
+        }
 
         binding.switchLocalMode.setOnCheckedChangeListener { _, _ -> updateModeUI() }
         binding.btnMigrate.setOnClickListener { confirmMigrate() }
         binding.btnTestConnection.setOnClickListener { testConnection() }
         binding.btnTestZhipuKey.setOnClickListener { testZhipuKey() }
         binding.btnSave.setOnClickListener { saveSettings() }
+        binding.btnLogin.setOnClickListener {
+            startActivity(Intent(requireContext(), LoginActivity::class.java).apply {
+                putExtra(LoginActivity.EXTRA_FORCE_SHOW, true)
+            })
+        }
         binding.btnLogout.setOnClickListener { logout() }
+        binding.btnArticleList.setOnClickListener {
+            startActivity(Intent(requireContext(), ArticleListActivity::class.java))
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateAccountUI()
     }
 
     private fun updateModeUI() {
@@ -63,10 +110,94 @@ class ProfileFragment : Fragment() {
         binding.cloudSection.visibility = if (isLocal) View.GONE else View.VISIBLE
     }
 
-    private fun updateModelStatus() {
-        binding.tvModelStatus.text = if (ModelDownloader.isReady(requireContext()))
-            "Embedding 模型已就绪" else "Embedding 模型将在首次搜索时自动初始化"
+    private fun updateAccountUI() {
+        val ctx = requireContext()
+        val loggedIn = AppPrefs.isLoggedIn(ctx)
+        if (loggedIn) {
+            binding.tvAccountStatus.visibility = View.VISIBLE
+            binding.tvAccountStatus.text = "已登录云端账号"
+            binding.btnLogin.visibility = View.GONE
+            binding.btnLogout.visibility = View.VISIBLE
+        } else {
+            binding.tvAccountStatus.visibility = View.GONE
+            binding.btnLogin.visibility = View.VISIBLE
+            binding.btnLogout.visibility = View.GONE
+        }
     }
+
+    private fun updateLlmBackendUI(isLocal: Boolean) {
+        binding.sectionCloudLlm.visibility = if (isLocal) View.GONE else View.VISIBLE
+        binding.sectionLocalLlm.visibility = if (isLocal) View.VISIBLE else View.GONE
+    }
+
+    private fun updateLocalModelStatus() {
+        val ctx = requireContext()
+        val modelId = selectedLocalModelId ?: return
+        val info = LlmModelManager.getInfo(modelId) ?: return
+        val downloaded = LlmModelManager.isDownloaded(ctx, modelId)
+        val resumeBytes = LlmModelManager.resumeBytes(ctx, modelId)
+        val hasPartial = resumeBytes > 0 && !downloaded
+
+        binding.tvLocalModelStatus.text = when {
+            downloaded -> "已下载 (${info.sizeDesc}，需 ${info.ramRequired} RAM)"
+            hasPartial -> "已下载 ${resumeBytes / 1_048_576}MB，可继续 (${info.sizeDesc})"
+            else -> "未下载 (${info.sizeDesc}，需 ${info.ramRequired} RAM)"
+        }
+        binding.btnDownloadModel.visibility = if (downloaded) View.GONE else View.VISIBLE
+        binding.btnDownloadModel.text = if (hasPartial) "继续下载" else "下载"
+        binding.btnPauseResumeModel.visibility = View.GONE
+        binding.btnDeleteModel.visibility = if (downloaded || hasPartial) View.VISIBLE else View.GONE
+    }
+
+    private fun startDownload() {
+        val ctx = requireContext()
+        val modelId = selectedLocalModelId ?: return
+        binding.btnDownloadModel.visibility = View.GONE
+        binding.btnPauseResumeModel.visibility = View.VISIBLE
+        binding.btnPauseResumeModel.text = "暂停"
+        binding.layoutDownloadProgress.visibility = View.VISIBLE
+
+        downloadJob = viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                LlmModelManager.download(ctx, modelId) { progress ->
+                    activity?.runOnUiThread {
+                        binding.progressDownload.progress = progress
+                        binding.tvDownloadPercent.text = "$progress%"
+                    }
+                }
+                binding.layoutDownloadProgress.visibility = View.GONE
+                binding.btnPauseResumeModel.visibility = View.GONE
+                updateLocalModelStatus()
+                Toast.makeText(ctx, "模型下载完成", Toast.LENGTH_SHORT).show()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Paused — keep tmp, update UI
+                activity?.runOnUiThread {
+                    binding.layoutDownloadProgress.visibility = View.GONE
+                    binding.btnPauseResumeModel.visibility = View.GONE
+                    updateLocalModelStatus()
+                }
+            } catch (e: Exception) {
+                binding.layoutDownloadProgress.visibility = View.GONE
+                binding.btnPauseResumeModel.visibility = View.GONE
+                updateLocalModelStatus()
+                Toast.makeText(ctx, "下载失败: ${e.message?.take(40)}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun togglePauseResume() {
+        val job = downloadJob
+        if (job != null && job.isActive) {
+            // Pause
+            job.cancel()
+            downloadJob = null
+        } else {
+            // Resume
+            startDownload()
+        }
+    }
+
+    private fun downloadModel() = startDownload()
 
     private fun confirmMigrate() {
         val ctx = requireContext()
@@ -108,6 +239,8 @@ class ProfileFragment : Fragment() {
         AppPrefs.setLocalMode(ctx, isLocal)
         AppPrefs.setZhipuApiKey(ctx, binding.etZhipuKey.text?.toString()?.trim() ?: "")
         AppPrefs.setLlmModel(ctx, binding.actvLlmModel.text?.toString()?.trim() ?: "glm-4-flash")
+        AppPrefs.setLlmBackend(ctx, if (binding.rgLlmBackend.checkedRadioButtonId == R.id.rbLocal) "local" else "cloud")
+        AppPrefs.setLocalLlmModel(ctx, selectedLocalModelId ?: "")
 
         if (!isLocal) {
             val url = binding.etServerUrl.text?.toString()?.trim() ?: ""

@@ -14,6 +14,7 @@ import com.wechatmem.app.data.remote.ApiService
 import com.wechatmem.app.data.repository.StorageManager
 import com.wechatmem.app.databinding.ActivityReceiveBinding
 import com.wechatmem.app.parser.WeChatTextParser
+import com.wechatmem.app.ui.article.ArticleReceiveActivity
 import com.wechatmem.app.ui.main.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,8 +74,20 @@ class ReceiveActivity : AppCompatActivity() {
     }
 
     private fun handleSingleSend() {
-        // Text is always in EXTRA_TEXT
         sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+
+        // Detect WeChat article URL and redirect
+        if (sharedText.contains("mp.weixin.qq.com")) {
+            val urlRegex = Regex("https?://mp\\.weixin\\.qq\\.com/\\S+")
+            val url = urlRegex.find(sharedText)?.value
+            if (url != null) {
+                startActivity(Intent(this, ArticleReceiveActivity::class.java).apply {
+                    putExtra("url", url)
+                })
+                finish()
+                return
+            }
+        }
 
         // Single image may come via EXTRA_STREAM
         val streamUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)

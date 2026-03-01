@@ -1,8 +1,21 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
 }
+
+fun gitCommitCount(): Int = try {
+    val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+        .directory(rootDir)
+        .start()
+    process.inputStream.bufferedReader().readText().trim().toInt()
+} catch (_: Exception) { 1 }
+
+fun buildTimestamp(): String =
+    LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMdd-HHmm"))
 
 android {
     namespace = "com.wechatmem.app"
@@ -12,8 +25,8 @@ android {
         applicationId = "com.wechatmem.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = gitCommitCount()
+        versionName = "1.0.${buildTimestamp()}"
     }
 
     buildTypes {

@@ -1,5 +1,7 @@
 package com.wechatmem.app.ui.conversations
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import com.wechatmem.app.R
 import com.wechatmem.app.data.model.ConversationBrief
 import com.wechatmem.app.databinding.ItemConversationBinding
@@ -49,6 +52,32 @@ class ConversationAdapter(
             }
 
             binding.root.setOnClickListener { onClick(item) }
+
+            // Tag chips
+            binding.chipGroupTags.removeAllViews()
+            val tags = item.tags.orEmpty()
+            if (tags.isNotEmpty()) {
+                binding.chipGroupTags.visibility = View.VISIBLE
+                for (tag in tags) {
+                    val color = try { Color.parseColor(tag.colorHex) } catch (_: Exception) { Color.GRAY }
+                    val bg = Color.argb(38, Color.red(color), Color.green(color), Color.blue(color))
+                    val chip = Chip(binding.root.context).apply {
+                        text = tag.name
+                        isClickable = false
+                        isCheckable = false
+                        chipBackgroundColor = ColorStateList.valueOf(bg)
+                        setTextColor(color)
+                        chipStrokeWidth = 0f
+                        textSize = 10f
+                        chipMinHeight = 24f * resources.displayMetrics.density
+                        chipStartPadding = 8f * resources.displayMetrics.density
+                        chipEndPadding = 8f * resources.displayMetrics.density
+                    }
+                    binding.chipGroupTags.addView(chip)
+                }
+            } else {
+                binding.chipGroupTags.visibility = View.GONE
+            }
         }
 
         private fun formatTime(iso: String): String {

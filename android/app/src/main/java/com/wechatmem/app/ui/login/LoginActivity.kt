@@ -23,8 +23,9 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Skip login if local mode or already authenticated
-        if (AppPrefs.isLocalMode(this) || AppPrefs.isLoggedIn(this)) {
+        // Skip login if local mode or already authenticated (unless explicitly requested)
+        val forceShow = intent.getBooleanExtra(EXTRA_FORCE_SHOW, false)
+        if (!forceShow && (AppPrefs.isLocalMode(this) || AppPrefs.isLoggedIn(this))) {
             goToMain()
             return
         }
@@ -93,5 +94,9 @@ class LoginActivity : AppCompatActivity() {
     private fun goToMain() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    companion object {
+        const val EXTRA_FORCE_SHOW = "force_show"
     }
 }
